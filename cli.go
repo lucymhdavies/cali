@@ -22,6 +22,11 @@ var (
 	dockerHost                      string
 	myFlags                         *viper.Viper
 	gitCfg                          *GitCheckoutConfig
+
+	// Flag default values
+	defaultFlagDefaults = map[string]interface{}{
+		"json": false, // Use human-friendly logging
+	}
 )
 
 // cobraFunc represents the function signiture which cobra uses for it's Run, PreRun, PostRun etc.
@@ -36,6 +41,9 @@ type Cli struct {
 	cfgFile *string
 	cmds    commands
 	*Command
+
+	// Default values for flags
+	flagDefaults map[string]interface{}
 }
 
 // NewCli returns a brand new cli
@@ -47,6 +55,7 @@ func NewCli(n string) *Cli {
 			name:  n,
 			cobra: &cobra.Command{Use: n},
 		},
+		flagDefaults: defaultFlagDefaults,
 	}
 	c.cobra.PersistentPreRun = func(cmd *cobra.Command, args []string) {
 		if debug {
@@ -88,6 +97,11 @@ func (c *Cli) FlagValues() *viper.Viper {
 	return myFlags
 }
 
+// SetFlagDefault sets the global default value for a Cobra flag and Viper config
+func (c *Cli) SetFlagDefault(name string, value interface{}) {
+	c.flagDefaults[name] = value
+}
+
 // initFlags does the intial setup of the root command's persistent flags
 func (c *Cli) initFlags() {
 	var cfg string
@@ -109,10 +123,11 @@ func (c *Cli) initFlags() {
 	myFlags.BindPFlag("debug", c.Flags().Lookup("debug"))
 	myFlags.SetDefault("debug", true)
 
-	c.Flags().BoolVarP(&jsonLogs, "json", "j", false, "Log in json format")
+	c.Flags().BoolVarP(&jsonLogs, "json", "j", c.flagDefaults["json"].(bool), "Log in json format")
 	myFlags.BindPFlag("json", c.Flags().Lookup("json"))
-	myFlags.SetDefault("json", true)
+	myFlags.SetDefault("json", c.flagDefaults["json"].(bool))
 
+	// TODO: determine this programatically, like in pscli
 	c.Flags().BoolVarP(&nonInteractive, "non-interactive", "N", false, "Do not create a tty for Docker")
 	myFlags.BindPFlag("non-interactive", c.Flags().Lookup("non-interactive"))
 	myFlags.SetDefault("non-interactive", false)
@@ -139,6 +154,7 @@ func (c *Cli) initConfig() {
 		myFlags.AddConfigPath("$HOME") // Fallback to home directory, if that is not set
 	}
 	myFlags.AutomaticEnv()
+	// TODO: do some magic with docker containers, if running from a git repo
 
 	// If a config file is found, read it in.
 	myFlags.ReadInConfig()
