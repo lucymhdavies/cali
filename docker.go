@@ -190,8 +190,10 @@ func (c *DockerClient) StartContainer(rm bool, name string) (string, error) {
 		"cmd":   fmt.Sprintf("%v", c.Conf.Cmd),
 	}).Debug("Creating new container")
 
-	if err := c.PullImage(c.Conf.Image); err != nil {
-		return "", fmt.Errorf("Failed to fetch image: %s", err)
+	if !c.ImageExists(c.Conf.Image){
+		if err := c.PullImage(c.Conf.Image); err != nil {
+			return "", fmt.Errorf("Failed to fetch image: %s", err)
+		}
 	}
 	resp, err := c.Cli.ContainerCreate(context.Background(), c.Conf, c.HostConf, c.NetConf, name)
 
@@ -358,54 +360,52 @@ func (c *DockerClient) ImageExists(image string) bool {
 // PullImage - Pull an image locally
 func (c *DockerClient) PullImage(image string) error {
 
-	if !c.ImageExists(image) {
-		log.WithFields(log.Fields{
-			"image": image,
-		}).Info("Pulling image layers... please wait")
+	log.WithFields(log.Fields{
+		"image": image,
+	}).Info("Pulling image layers... please wait")
 
-		resp, err := c.Cli.ImagePull(context.Background(), image, types.ImagePullOptions{})
+	resp, err := c.Cli.ImagePull(context.Background(), image, types.ImagePullOptions{})
 
-		if err != nil {
-			return fmt.Errorf("API could not fetch \"%s\": %s", image, err)
-		}
-		scanner := bufio.NewScanner(resp)
-		var cr CreateResponse
-		bar := pb.New(1)
-		// Send progress bar to stderr to keep stdout clean when piping
-		bar.Output = os.Stderr
-		bar.ShowCounters = true
-		bar.ShowTimeLeft = false
-		bar.ShowSpeed = false
-		bar.Prefix("          ")
-		bar.Postfix("          ")
-		started := false
-
-		for scanner.Scan() {
-			txt := scanner.Text()
-			byt := []byte(txt)
-
-			if err := json.Unmarshal(byt, &cr); err != nil {
-				return fmt.Errorf("Error decoding json from create image API: %s", err)
-			}
-
-			if cr.Status == "Downloading" {
-
-				if !started {
-					fmt.Print("\n")
-					bar.Total = int64(cr.ProgressDetail.Total)
-					bar.Start()
-					started = true
-				}
-				bar.Total = int64(cr.ProgressDetail.Total)
-				bar.Set(cr.ProgressDetail.Current)
-			}
-		}
-
-		if err := scanner.Err(); err != nil {
-			return fmt.Errorf("Failed to get logs: %s", err)
-		}
-		bar.Finish()
-		fmt.Print("\n")
+	if err != nil {
+		return fmt.Errorf("API could not fetch \"%s\": %s", image, err)
 	}
+	scanner := bufio.NewScanner(resp)
+	var cr CreateResponse
+	bar := pb.New(1)
+	// Send progress bar to stderr to keep stdout clean when piping
+	bar.Output = os.Stderr
+	bar.ShowCounters = true
+	bar.ShowTimeLeft = false
+	bar.ShowSpeed = false
+	bar.Prefix("          ")
+	bar.Postfix("          ")
+	started := false
+
+	for scanner.Scan() {
+		txt := scanner.Text()
+		byt := []byte(txt)
+
+		if err := json.Unmarshal(byt, &cr); err != nil {
+			return fmt.Errorf("Error decoding json from create image API: %s", err)
+		}
+
+		if cr.Status == "Downloading" {
+
+			if !started {
+				fmt.Print("\n")
+				bar.Total = int64(cr.ProgressDetail.Total)
+				bar.Start()
+				started = true
+			}
+			bar.Total = int64(cr.ProgressDetail.Total)
+			bar.Set(cr.ProgressDetail.Current)
+		}
+	}
+
+	if err := scanner.Err(); err != nil {
+		return fmt.Errorf("Failed to get logs: %s", err)
+	}
+	bar.Finish()
+	fmt.Print("\n")
 	return nil
 }
