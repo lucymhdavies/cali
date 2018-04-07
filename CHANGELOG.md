@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Fixed
 - PullImage now always pulls as should be expected
 - StartContainer now only calls PullImage when the image does not exist locally
+- Other miscelaneous refactoring
 
 [0.1.1]:      https://github.com/skybet/cali/compare/v0.1.0...v0.1.1
 ## [0.1.1] - 2018-02-11

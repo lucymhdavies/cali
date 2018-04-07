@@ -84,7 +84,7 @@ func (t *Task) Bind(src, dst string) (string, error) {
 		usr, err := user.Current()
 
 		if err != nil {
-			return expanded, fmt.Errorf("Error expanding bind path: %s")
+			return expanded, fmt.Errorf("Error expanding bind path: %s", err)
 		}
 		expanded = filepath.Join(usr.HomeDir, src[2:])
 	} else {
@@ -93,7 +93,7 @@ func (t *Task) Bind(src, dst string) (string, error) {
 	expanded, err := filepath.Abs(expanded)
 
 	if err != nil {
-		return expanded, fmt.Errorf("Error expanding bind path: %s")
+		return expanded, fmt.Errorf("Error expanding bind path: %s", err)
 	}
 	return fmt.Sprintf("%s:%s", expanded, dst), nil
 }
