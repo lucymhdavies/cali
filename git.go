@@ -38,7 +38,12 @@ func (g *Git) Checkout(cfg *GitCheckoutConfig) (string, error) {
 		return "", fmt.Errorf("Failed to create data container for %s: %s", cfg.Repo, err)
 	}
 
-	if g.c.ContainerExists(containerName) {
+	exists, err := g.c.ContainerExists(containerName)
+	if err != nil {
+		return "", err
+	}
+
+	if exists {
 		log.Infof("Existing data container found: %s", containerName)
 
 		if _, err := g.Pull(containerName); err != nil {

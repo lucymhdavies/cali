@@ -18,9 +18,6 @@ var defaultTaskFunc TaskFunc = func(t *Task, args []string) {
 	if err := t.SetDefaults(args); err != nil {
 		log.Fatalf("Error setting container defaults: %s", err)
 	}
-	if err := t.InitDocker(); err != nil {
-		log.Fatalf("Error initialising Docker: %s", err)
-	}
 	if _, err := t.StartContainer(true, ""); err != nil {
 		log.Fatalf("Error executing task: %s", err)
 	}
