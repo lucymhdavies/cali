@@ -47,21 +47,21 @@ func TestGetContainerName(t *testing.T) {
 	}
 }
 
-func TestRepoNameFromUrl(t *testing.T) {
+func TestRepoNameFromURL(t *testing.T) {
 	t.Log("Example git url")
-	name, err := repoNameFromUrl("git@github.com:skybet/cali.git")
+	name, err := repoNameFromURL("git@github.com:skybet/cali.git")
 	if assert.NoError(t, err) {
 		assert.Equal(t, "github-com-skybet-cali", name)
 	}
 
 	t.Log("Example https url")
-	name, err = repoNameFromUrl("https://github.com/skybet/cali.git")
+	name, err = repoNameFromURL("https://github.com/skybet/cali.git")
 	if assert.NoError(t, err) {
 		assert.Equal(t, "github-com-skybet-cali", name)
 	}
 
 	t.Log("Example git url with ssh protocol")
-	name, err = repoNameFromUrl("ssh://git@github.com/skybet/cali.git")
+	name, err = repoNameFromURL("ssh://git@github.com/skybet/cali.git")
 	if assert.NoError(t, err) {
 		assert.Equal(t, "github-com-skybet-cali", name)
 	}

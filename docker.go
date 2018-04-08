@@ -22,7 +22,7 @@ import (
 
 // Event holds the json structure for Docker API events
 type Event struct {
-	Id     string `json:"id"`
+	ID     string `json:"id"`
 	Status string `json:"status"`
 }
 
@@ -34,7 +34,7 @@ type ProgressDetail struct {
 
 // CreateResponse is the response from Docker API when pulling an image
 type CreateResponse struct {
-	Id             string         `json:"id"`
+	ID             string         `json:"id"`
 	Status         string         `json:"status"`
 	ProgressDetail ProgressDetail `json:"progressDetail"`
 	Progress       string         `json:"progress,omitempty"`
@@ -48,7 +48,7 @@ type DockerClient struct {
 	Conf     *container.Config
 }
 
-// Init initialises the client
+// InitDocker initialises the client
 func (c *DockerClient) InitDocker() error {
 	var cli *client.Client
 
@@ -104,7 +104,7 @@ func (c *DockerClient) AddBind(bnd string) {
 	c.HostConf.Binds = append(c.HostConf.Binds, bnd)
 }
 
-// AddEnvs adds an environment variable to the HostConfig
+// AddEnv adds an environment variable to the HostConfig
 func (c *DockerClient) AddEnv(key, value string) {
 	c.Conf.Env = append(c.Conf.Env, fmt.Sprintf("%s=%s", key, value))
 }
