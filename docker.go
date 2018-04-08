@@ -50,6 +50,11 @@ type DockerClient struct {
 
 // InitDocker initialises the client
 func (c *DockerClient) InitDocker() error {
+	// Do nothing if already initialised Docker
+	if c.Cli != nil {
+		return nil
+	}
+
 	var cli *client.Client
 
 	defaultHeaders := map[string]string{"User-Agent": "engine-api-cli-1.0"}
@@ -194,13 +199,22 @@ func (c *DockerClient) deleteContainerOnSignal(id string, sigs chan os.Signal) {
 
 // StartContainer will create and start a container with logs and optional cleanup
 func (c *DockerClient) StartContainer(rm bool, name string) (string, error) {
+	if err := c.InitDocker(); err != nil {
+		return "", err
+	}
+
 	log.WithFields(log.Fields{
 		"image": c.Conf.Image,
 		"envs":  fmt.Sprintf("%v", c.Conf.Env),
 		"cmd":   fmt.Sprintf("%v", c.Conf.Cmd),
 	}).Debug("Creating new container")
 
-	if !c.ImageExists(c.Conf.Image) {
+	exists, err := c.ImageExists(c.Conf.Image)
+	if err != nil {
+		return "", fmt.Errorf("Failed to create container: %s", err)
+	}
+
+	if !exists {
 		if err := c.PullImage(c.Conf.Image); err != nil {
 			return "", fmt.Errorf("Failed to fetch image: %s", err)
 		}
@@ -317,15 +331,25 @@ func (c *DockerClient) StartContainer(rm bool, name string) (string, error) {
 }
 
 // ContainerExists determines if the container with this name exist
-func (c *DockerClient) ContainerExists(name string) bool {
+func (c *DockerClient) ContainerExists(name string) (bool, error) {
+	if err := c.InitDocker(); err != nil {
+		return false, err
+	}
+
 	_, err := c.Cli.ContainerInspect(context.Background(), name)
 
 	// Fairly safe assumption: no errors == container exists
-	return err == nil
+	if err != nil {
+		return false, nil
+	}
+	return true, nil
 }
 
 // DeleteContainer - Delete a container
 func (c *DockerClient) DeleteContainer(id string) error {
+	if err := c.InitDocker(); err != nil {
+		return err
+	}
 
 	log.WithFields(log.Fields{
 		"id": id[0:12],
@@ -338,7 +362,11 @@ func (c *DockerClient) DeleteContainer(id string) error {
 }
 
 // ImageExists determines if an image exist locally
-func (c *DockerClient) ImageExists(image string) bool {
+func (c *DockerClient) ImageExists(image string) (bool, error) {
+	if err := c.InitDocker(); err != nil {
+		return false, err
+	}
+
 	log.WithFields(log.Fields{
 		"image": image,
 	}).Debug("Checking if image exists locally")
@@ -350,13 +378,16 @@ func (c *DockerClient) ImageExists(image string) bool {
 		log.WithFields(log.Fields{
 			"image": image,
 		}).Debugf("Error inspecting image: %s", err)
-		return false
+		return false, nil
 	}
-	return true
+	return true, nil
 }
 
 // PullImage - Pull an image locally
 func (c *DockerClient) PullImage(image string) error {
+	if err := c.InitDocker(); err != nil {
+		return err
+	}
 
 	log.WithFields(log.Fields{
 		"image": image,
