@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/signal"
 	"path"
+	"syscall"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/docker/docker/api/types"
@@ -45,7 +46,6 @@ type DockerClient struct {
 	HostConf *container.HostConfig
 	NetConf  *network.NetworkingConfig
 	Conf     *container.Config
-	running  []string
 }
 
 // Init initialises the client
@@ -182,6 +182,16 @@ func (c *DockerClient) BindFromGit(cfg *GitCheckoutConfig, noGit func() error) e
 	return nil
 }
 
+// deleteContainerOnSignal waits for a signal then deletes a container
+func (c *DockerClient) deleteContainerOnSignal(id string, sigs chan os.Signal) {
+	sig := <-sigs
+	log.Debugf("Trapped signal: %s", sig)
+
+	if err := c.DeleteContainer(id); err != nil {
+		log.Fatalf("Failed to remove container: %s", err)
+	}
+}
+
 // StartContainer will create and start a container with logs and optional cleanup
 func (c *DockerClient) StartContainer(rm bool, name string) (string, error) {
 	log.WithFields(log.Fields{
@@ -190,7 +200,7 @@ func (c *DockerClient) StartContainer(rm bool, name string) (string, error) {
 		"cmd":   fmt.Sprintf("%v", c.Conf.Cmd),
 	}).Debug("Creating new container")
 
-	if !c.ImageExists(c.Conf.Image){
+	if !c.ImageExists(c.Conf.Image) {
 		if err := c.PullImage(c.Conf.Image); err != nil {
 			return "", fmt.Errorf("Failed to fetch image: %s", err)
 		}
@@ -201,20 +211,11 @@ func (c *DockerClient) StartContainer(rm bool, name string) (string, error) {
 		return "", fmt.Errorf("Failed to create container: %s", err)
 	}
 
-	// Clean up on ctrl+c
+	// Clean up on ctrl+c or kill
 	ch := make(chan os.Signal, 1)
-	signal.Notify(ch, os.Interrupt)
-	signal.Notify(ch, os.Kill)
+	signal.Notify(ch, syscall.SIGINT, syscall.SIGTERM)
+	go c.deleteContainerOnSignal(resp.ID, ch)
 
-	go func() {
-		<-ch
-		log.Debug("Trapped ctrl+c")
-
-		if err = c.DeleteContainer(resp.ID); err != nil {
-			log.Errorf("Failed to remove container: %s", err)
-		}
-		os.Exit(1)
-	}()
 	log.WithFields(log.Fields{
 		"image": c.Conf.Image,
 		"id":    resp.ID[0:12],
@@ -240,11 +241,11 @@ func (c *DockerClient) StartContainer(rm bool, name string) (string, error) {
 			Stderr: true,
 		}
 		hijack, err := c.Cli.ContainerAttach(context.Background(), resp.ID, ca)
-		defer hijack.Conn.Close()
-
 		if err != nil {
 			return resp.ID, fmt.Errorf("Failed to start container: %s", err)
 		}
+		defer hijack.Conn.Close()
+
 		oldState, err := terminal.MakeRaw(fd)
 		defer terminal.Restore(fd, oldState)
 
@@ -304,7 +305,6 @@ func (c *DockerClient) StartContainer(rm bool, name string) (string, error) {
 	}
 
 	if rm {
-
 		if err = c.DeleteContainer(resp.ID); err != nil {
 			return resp.ID, fmt.Errorf("Failed to remove container: %s", err)
 		}
@@ -320,15 +320,13 @@ func (c *DockerClient) StartContainer(rm bool, name string) (string, error) {
 func (c *DockerClient) ContainerExists(name string) bool {
 	_, err := c.Cli.ContainerInspect(context.Background(), name)
 
-	// Fairly safe assumption
-	if err != nil {
-		return false
-	}
-	return true
+	// Fairly safe assumption: no errors == container exists
+	return err == nil
 }
 
 // DeleteContainer - Delete a container
 func (c *DockerClient) DeleteContainer(id string) error {
+
 	log.WithFields(log.Fields{
 		"id": id[0:12],
 	}).Debug("Removing container")
