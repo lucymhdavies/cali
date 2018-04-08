@@ -210,6 +210,10 @@ func (c *DockerClient) StartContainer(rm bool, name string) (string, error) {
 	}).Debug("Creating new container")
 
 	exists, err := c.ImageExists(c.Conf.Image)
+	if err != nil {
+		return "", fmt.Errorf("Failed to create container: %s", err)
+	}
+
 	if !exists {
 		if err := c.PullImage(c.Conf.Image); err != nil {
 			return "", fmt.Errorf("Failed to fetch image: %s", err)
