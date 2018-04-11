@@ -292,24 +292,8 @@ func (c *DockerClient) StartContainer(rm bool, name string) (string, error) {
 			log.Errorf("Read error: %s", err)
 		}
 	} else {
-		// No terminal, then just pump out the log output
-		if err := c.Cli.ContainerStart(context.Background(), resp.ID, types.ContainerStartOptions{}); err != nil {
+		if err := c.startContainerNonInteractive(resp.ID); err != nil {
 			return resp.ID, fmt.Errorf("Failed to start container: %s", err)
-		}
-		log.WithFields(log.Fields{
-			"image": c.Conf.Image,
-			"id":    resp.ID[0:12],
-		}).Debug("Fetching log stream")
-		logOptions := types.ContainerLogsOptions{Follow: true, ShowStdout: true, ShowStderr: true}
-		ls, err := c.Cli.ContainerLogs(context.Background(), resp.ID, logOptions)
-
-		if err != nil {
-			return resp.ID, fmt.Errorf("Failed to get container logs: %s", err)
-		}
-
-		_, err = io.Copy(os.Stdout, ls)
-		if err != nil {
-			return resp.ID, fmt.Errorf("Failed to get container logs: %s", err)
 		}
 	}
 	// Container has finished running. Get its exit code
@@ -328,6 +312,33 @@ func (c *DockerClient) StartContainer(rm bool, name string) (string, error) {
 		return resp.ID, fmt.Errorf("Non-zero exit status from Docker container")
 	}
 	return resp.ID, nil
+}
+
+// startContainerNonInteractive starts a container, and just copies its logs to stdout
+func (c *DockerClient) startContainerNonInteractive(containerID string) error {
+
+	// No terminal, then just pump out the log output
+	if err := c.Cli.ContainerStart(context.Background(), containerID, types.ContainerStartOptions{}); err != nil {
+		return fmt.Errorf("Failed to start container: %s", err)
+	}
+	log.WithFields(log.Fields{
+		"image": c.Conf.Image,
+		"id":    containerID[0:12],
+	}).Debug("Fetching log stream")
+	logOptions := types.ContainerLogsOptions{Follow: true, ShowStdout: true, ShowStderr: true}
+	containerLogs, err := c.Cli.ContainerLogs(context.Background(), containerID, logOptions)
+
+	if err != nil {
+		return fmt.Errorf("Failed to get container logs: %s", err)
+	}
+
+	_, err = io.Copy(os.Stdout, containerLogs)
+	if err != nil {
+		return fmt.Errorf("Failed to get container logs: %s", err)
+	}
+
+	return nil
+
 }
 
 // ContainerExists determines if the container with this name exist
