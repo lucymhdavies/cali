@@ -238,7 +238,7 @@ func (c *DockerClient) StartContainer(rm bool, name string) (string, error) {
 	// Set the TTY size to match the host terminal
 	fd := int(os.Stdin.Fd())
 
-	if !nonInteractive && terminal.IsTerminal(fd) {
+	if !nonInteractive && terminal.IsTerminal(int(os.Stdout.Fd())) {
 		// While we have a container running, create a buffer for the pscli logs
 		logBuffer := bufio.NewWriter(os.Stdout)
 		log.SetOutput(logBuffer)
