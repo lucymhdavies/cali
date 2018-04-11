@@ -15,6 +15,7 @@ import (
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/client"
+	"github.com/docker/docker/pkg/stdcopy"
 	"golang.org/x/crypto/ssh/terminal"
 	"golang.org/x/net/context"
 	pb "gopkg.in/cheggaaa/pb.v1"
@@ -219,6 +220,11 @@ func (c *DockerClient) StartContainer(rm bool, name string) (string, error) {
 			return "", fmt.Errorf("Failed to fetch image: %s", err)
 		}
 	}
+
+	// Disable TTY if we're non-interactive, or if we're not in a terminal
+	if nonInteractive || !terminal.IsTerminal(int(os.Stdout.Fd())) {
+		c.Conf.Tty = false
+	}
 	resp, err := c.Cli.ContainerCreate(context.Background(), c.Conf, c.HostConf, c.NetConf, name)
 
 	if err != nil {
@@ -238,7 +244,12 @@ func (c *DockerClient) StartContainer(rm bool, name string) (string, error) {
 	// Set the TTY size to match the host terminal
 	fd := int(os.Stdin.Fd())
 
-	if !nonInteractive && terminal.IsTerminal(fd) {
+	// TODO: I would argue that, at some point, we change this behaviour to be more inline with Docker:
+	// -i interactive - default true if in a terminal, or if we're piping stuff in with stdin
+	// -t tty         - default true if in a terminal
+	// But given Cali doesn't currently support piping stuff in from stdin... not important yet
+
+	if !nonInteractive && terminal.IsTerminal(int(os.Stdout.Fd())) {
 		// While we have a container running, create a buffer for the pscli logs
 		logBuffer := bufio.NewWriter(os.Stdout)
 		log.SetOutput(logBuffer)
@@ -292,24 +303,8 @@ func (c *DockerClient) StartContainer(rm bool, name string) (string, error) {
 			log.Errorf("Read error: %s", err)
 		}
 	} else {
-		// No terminal, then just pump out the log output
-		if err := c.Cli.ContainerStart(context.Background(), resp.ID, types.ContainerStartOptions{}); err != nil {
+		if err := c.startContainerNonInteractive(resp.ID); err != nil {
 			return resp.ID, fmt.Errorf("Failed to start container: %s", err)
-		}
-		log.WithFields(log.Fields{
-			"image": c.Conf.Image,
-			"id":    resp.ID[0:12],
-		}).Debug("Fetching log stream")
-		logOptions := types.ContainerLogsOptions{Follow: true, ShowStdout: true, ShowStderr: true}
-		ls, err := c.Cli.ContainerLogs(context.Background(), resp.ID, logOptions)
-
-		if err != nil {
-			return resp.ID, fmt.Errorf("Failed to get container logs: %s", err)
-		}
-
-		_, err = io.Copy(os.Stdout, ls)
-		if err != nil {
-			return resp.ID, fmt.Errorf("Failed to get container logs: %s", err)
 		}
 	}
 	// Container has finished running. Get its exit code
@@ -328,6 +323,33 @@ func (c *DockerClient) StartContainer(rm bool, name string) (string, error) {
 		return resp.ID, fmt.Errorf("Non-zero exit status from Docker container")
 	}
 	return resp.ID, nil
+}
+
+// startContainerNonInteractive starts a container, and just copies its logs to stdout
+func (c *DockerClient) startContainerNonInteractive(containerID string) error {
+
+	// No terminal, then just pump out the log output
+	if err := c.Cli.ContainerStart(context.Background(), containerID, types.ContainerStartOptions{}); err != nil {
+		return fmt.Errorf("Failed to start container: %s", err)
+	}
+	log.WithFields(log.Fields{
+		"image": c.Conf.Image,
+		"id":    containerID[0:12],
+	}).Debug("Fetching log stream")
+	logOptions := types.ContainerLogsOptions{Follow: true, ShowStdout: true, ShowStderr: true}
+	containerLogs, err := c.Cli.ContainerLogs(context.Background(), containerID, logOptions)
+
+	if err != nil {
+		return fmt.Errorf("Failed to get container logs: %s", err)
+	}
+
+	_, err = stdcopy.StdCopy(os.Stdout, os.Stderr, containerLogs)
+	if err != nil {
+		return fmt.Errorf("Failed to get container logs: %s", err)
+	}
+
+	return nil
+
 }
 
 // ContainerExists determines if the container with this name exist
