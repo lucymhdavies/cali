@@ -28,7 +28,7 @@ type commands map[string]*Command
 
 // Cli is the application itself
 type Cli struct {
-	name    string
+	Name    string
 	cfgFile *string
 	cmds    commands
 	*Command
@@ -37,7 +37,7 @@ type Cli struct {
 // NewCli returns a brand new cli
 func NewCli(n string) *Cli {
 	c := Cli{
-		name: n,
+		Name: n,
 		cmds: make(commands),
 		Command: &Command{
 			name:  n,
@@ -87,7 +87,7 @@ func (c *Cli) FlagValues() *viper.Viper {
 // initFlags does the intial setup of the root command's persistent flags
 func (c *Cli) initFlags() {
 	var cfg string
-	txt := fmt.Sprintf("config file (default is $HOME/.%s.yaml)", c.name)
+	txt := fmt.Sprintf("config file (default is $HOME/.%s.yaml)", c.Name)
 	c.cobra.PersistentFlags().StringVar(&cfg, "config", "", txt)
 	c.cfgFile = &cfg
 
@@ -130,7 +130,7 @@ func (c *Cli) initConfig() {
 	if *c.cfgFile != "" {
 		myFlags.SetConfigFile(*c.cfgFile)
 	} else {
-		myFlags.SetConfigName(fmt.Sprintf(".%s", c.name))
+		myFlags.SetConfigName(fmt.Sprintf(".%s", c.Name))
 		myFlags.AddConfigPath(".")     // First check current working directory
 		myFlags.AddConfigPath("$HOME") // Fallback to home directory, if that is not set
 	}
