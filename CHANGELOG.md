@@ -6,7 +6,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 [Unreleased]: https://github.com/skybet/cali/compare/v0.2.0...master
 ## [Unreleased]
-- Nothing yet
+
+### Changed
+- expose cli.Name such that Cali apps can get their own name
 
 [0.2.0]:      https://github.com/skybet/cali/compare/v0.1.2...v0.2.0
 ## [0.2.0] - 2018-04-11
