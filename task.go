@@ -49,13 +49,8 @@ func (t *Task) SetInitFunc(f TaskFunc) {
 // Configures git
 func (t *Task) SetDefaults(args []string) error {
 	t.SetWorkDir(workdir)
-	awsDir, err := t.Bind("~/.aws", "/root/.aws")
-	if err != nil {
-		return err
-	}
-	t.AddBinds([]string{awsDir})
 
-	err = t.BindFromGit(gitCfg, func() error {
+	err := t.BindFromGit(gitCfg, func() error {
 		pwd, err := t.Bind("./", workdir)
 		if err != nil {
 			return err
