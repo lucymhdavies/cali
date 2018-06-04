@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 [Unreleased]: https://github.com/skybet/cali/compare/v0.2.0...master
 ## [Unreleased]
 
+### Removed
+- Remove auto-mount of aws credentials, from ~/.aws
+
 ### Changed
 - expose cli.Name such that Cali apps can get their own name
 
