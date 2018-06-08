@@ -18,7 +18,7 @@ import (
 	"github.com/docker/docker/pkg/stdcopy"
 	"golang.org/x/crypto/ssh/terminal"
 	"golang.org/x/net/context"
-	pb "gopkg.in/cheggaaa/pb.v1"
+	"gopkg.in/cheggaaa/pb.v1"
 )
 
 // Event holds the json structure for Docker API events
@@ -292,9 +292,8 @@ func (c *DockerClient) StartContainer(rm bool, name string) (string, error) {
 			}
 		}()
 
-		tw, th, _ := terminal.GetSize(fd)
-
-		if err := c.Cli.ContainerResize(context.Background(), resp.ID, types.ResizeOptions{Height: uint(th), Width: uint(tw)}); err != nil {
+		err = c.autoResizeContainer(resp.ID)
+		if err != nil {
 			return resp.ID, fmt.Errorf("Failed to start container: %s", err)
 		}
 
@@ -458,5 +457,40 @@ func (c *DockerClient) PullImage(image string) error {
 	}
 	bar.Finish()
 	fmt.Print("\n")
+	return nil
+}
+
+func (c *DockerClient) autoResizeContainer(id string) error {
+
+	// Initial resize
+	err := c.resizeContainer(id)
+	if err != nil {
+		return err
+	}
+
+	ch := make(chan os.Signal, 1)
+	signal.Notify(ch, syscall.SIGWINCH)
+
+	// goroutine to check for the SIGWINCH
+	go func() {
+		for err == nil {
+			<-ch
+
+			err = c.resizeContainer(id)
+		}
+		log.WithField("container", id).Debug("Finished auto-resize")
+	}()
+
+	return nil
+}
+
+func (c *DockerClient) resizeContainer(id string) error {
+	fd := int(os.Stdin.Fd())
+	tw, th, _ := terminal.GetSize(fd)
+
+	var err error
+	if err = c.Cli.ContainerResize(context.Background(), id, types.ResizeOptions{Height: uint(th), Width: uint(tw)}); err != nil {
+		return fmt.Errorf("Failed to resize container: %s", err)
+	}
 	return nil
 }
