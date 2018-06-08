@@ -473,7 +473,7 @@ func (c *DockerClient) autoResizeContainer(id string) error {
 
 	// goroutine to check for the SIGWINCH
 	go func() {
-		for err != nil {
+		for err == nil {
 			<-ch
 
 			err = c.resizeContainer(id)
