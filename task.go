@@ -89,3 +89,19 @@ func (t *Task) Bind(src, dst string) (string, error) {
 	}
 	return fmt.Sprintf("%s:%s", expanded, dst), nil
 }
+
+// BindDockerSocket is a utility function which binds the docker socket
+func (t *Task) BindDockerSocket() error {
+	// For now, assumes /var/run/docker.sock from host
+	// Untested with remote docker
+	dockerSocket, err := t.Bind("/var/run/docker.sock", "/var/run/docker.sock")
+	if err != nil {
+		return err
+	}
+
+	t.AddBinds([]string{dockerSocket})
+
+	return nil
+}
+
+// TODO: add tests
