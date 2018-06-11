@@ -24,6 +24,11 @@ func (c *Command) SetLong(l string) {
 	c.cobra.Long = l
 }
 
+// SetAliases sets aliases for a command
+func (c *Command) SetAliases(a []string) {
+	c.cobra.Aliases = a
+}
+
 // setPreRun sets the cobra.Command.PreRun function
 func (c *Command) setPreRun(f cobraFunc) {
 	c.cobra.PreRun = f
