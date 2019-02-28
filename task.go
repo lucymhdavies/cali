@@ -43,12 +43,14 @@ func (t *Task) SetInitFunc(f TaskFunc) {
 }
 
 // SetDefaults sets the default host config for a task container
-// Mounts the PWD to /tmp/workspace
+// Mounts the PWD to /tmp/workspace (Unless task WorkingDir config is set)
 // Mounts your ~/.aws directory to /root - change this if your image runs as a non-root user
 // Sets /tmp/workspace as the workdir
 // Configures git
 func (t *Task) SetDefaults(args []string) error {
-	t.SetWorkDir(workdir)
+	if len(t.Conf.WorkingDir) == 0 {
+		t.SetWorkDir(workdir)
+	}
 
 	err := t.BindFromGit(gitCfg, func() error {
 		pwd, err := t.Bind("./", workdir)
