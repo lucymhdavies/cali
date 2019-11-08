@@ -7,9 +7,9 @@ import (
 	"regexp"
 	"strings"
 
-	log "github.com/Sirupsen/logrus"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/network"
+	log "github.com/sirupsen/logrus"
 )
 
 // GitCheckoutConfig is input for Git.Checkout
@@ -119,7 +119,7 @@ func (cfg GitCheckoutConfig) GetContainerName() (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("Failed to get container name for %s: %s", cfg.Repo, err)
 	}
-	containerName := repoName
+	var containerName string
 
 	if cfg.RelPath == "." || cfg.RelPath == "" {
 		containerName = fmt.Sprintf("data_%s_%s_%x",

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"runtime"
 
-	log "github.com/Sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -98,31 +98,31 @@ func (c *Cli) initFlags() {
 		dockerSocket = "unix:///var/run/docker.sock"
 	}
 	c.Flags().StringVarP(&dockerHost, "docker-host", "H", dockerSocket, "URI of Docker Daemon")
-	myFlags.BindPFlag("docker-host", c.Flags().Lookup("docker-host"))
+	_ = myFlags.BindPFlag("docker-host", c.Flags().Lookup("docker-host"))
 	myFlags.SetDefault("docker-host", dockerSocket)
 
 	c.Flags().BoolVarP(&debug, "debug", "d", false, "Debug mode")
-	myFlags.BindPFlag("debug", c.Flags().Lookup("debug"))
+	_ = myFlags.BindPFlag("debug", c.Flags().Lookup("debug"))
 	myFlags.SetDefault("debug", true)
 
 	c.Flags().BoolVarP(&jsonLogs, "json", "j", false, "Log in json format")
-	myFlags.BindPFlag("json", c.Flags().Lookup("json"))
+	_ = myFlags.BindPFlag("json", c.Flags().Lookup("json"))
 	myFlags.SetDefault("json", true)
 
 	c.Flags().BoolVarP(&nonInteractive, "non-interactive", "N", false, "Do not create a tty for Docker")
-	myFlags.BindPFlag("non-interactive", c.Flags().Lookup("non-interactive"))
+	_ = myFlags.BindPFlag("non-interactive", c.Flags().Lookup("non-interactive"))
 	myFlags.SetDefault("non-interactive", false)
 
 	gitCfg = new(GitCheckoutConfig)
 	c.Flags().StringVarP(&gitCfg.Repo, "git", "g", "", "Git repo to checkout and build. Default behaviour is to build $PWD.")
-	myFlags.BindPFlag("git", c.Flags().Lookup("git"))
+	_ = myFlags.BindPFlag("git", c.Flags().Lookup("git"))
 
 	c.Flags().StringVarP(&gitCfg.Branch, "git-branch", "b", "master", "Branch to checkout. Only makes sense when combined with the --git flag.")
-	myFlags.BindPFlag("branch", c.Flags().Lookup("branch"))
+	_ = myFlags.BindPFlag("branch", c.Flags().Lookup("branch"))
 	myFlags.SetDefault("branch", "master")
 
 	c.Flags().StringVarP(&gitCfg.RelPath, "git-path", "P", "", "Path within a git repo where we want to operate.")
-	myFlags.BindPFlag("git-path", c.Flags().Lookup("git-path"))
+	_ = myFlags.BindPFlag("git-path", c.Flags().Lookup("git-path"))
 }
 
 // initConfig does the initial setup of viper
@@ -137,7 +137,7 @@ func (c *Cli) initConfig() {
 	myFlags.AutomaticEnv()
 
 	// If a config file is found, read it in.
-	myFlags.ReadInConfig()
+	_ = myFlags.ReadInConfig()
 	// Above returns an error if it doesn't find a config file
 	// But we don't care
 }
