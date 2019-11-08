@@ -7,9 +7,9 @@ import (
 	"regexp"
 	"strings"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/network"
+	log "github.com/sirupsen/logrus"
 )
 
 // GitCheckoutConfig is input for Git.Checkout

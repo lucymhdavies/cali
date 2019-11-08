@@ -10,12 +10,12 @@ import (
 	"path"
 	"syscall"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/client"
 	"github.com/docker/docker/pkg/stdcopy"
+	log "github.com/sirupsen/logrus"
 	"golang.org/x/crypto/ssh/terminal"
 	"golang.org/x/net/context"
 	"gopkg.in/cheggaaa/pb.v1"
@@ -272,7 +272,7 @@ func (c *DockerClient) StartContainer(rm bool, name string) (string, error) {
 		defer hijack.Conn.Close()
 
 		oldState, err := terminal.MakeRaw(fd)
-		defer func () {
+		defer func() {
 			_ = terminal.Restore(fd, oldState)
 		}()
 
@@ -286,7 +286,7 @@ func (c *DockerClient) StartContainer(rm bool, name string) (string, error) {
 
 		// Start stdin reader
 		go func() {
-			defer func () {
+			defer func() {
 				_ = terminal.Restore(fd, oldState)
 			}()
 			defer hijack.Conn.Close()
