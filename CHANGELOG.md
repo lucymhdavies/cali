@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 [Unreleased]: https://github.com/skybet/cali/compare/v0.4.0...master
 ## [Unreleased]
 
+Nothing yet
+
 
 [0.4.0]:      https://github.com/skybet/cali/compare/v0.3.0...v0.4.0
 ## [0.4.0] - 2019-11-08
