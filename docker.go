@@ -183,7 +183,7 @@ func (c *DockerClient) BindFromGit(cfg *GitCheckoutConfig, noGit func() error) e
 		}
 	} else {
 		// Execute callback
-		noGit()
+		_ = noGit()
 	}
 	return nil
 }
@@ -272,7 +272,9 @@ func (c *DockerClient) StartContainer(rm bool, name string) (string, error) {
 		defer hijack.Conn.Close()
 
 		oldState, err := terminal.MakeRaw(fd)
-		defer terminal.Restore(fd, oldState)
+		defer func () {
+			_ = terminal.Restore(fd, oldState)
+		}()
 
 		if err != nil {
 			panic(err)
@@ -284,7 +286,9 @@ func (c *DockerClient) StartContainer(rm bool, name string) (string, error) {
 
 		// Start stdin reader
 		go func() {
-			defer terminal.Restore(fd, oldState)
+			defer func () {
+				_ = terminal.Restore(fd, oldState)
+			}()
 			defer hijack.Conn.Close()
 
 			if _, err := io.Copy(hijack.Conn, os.Stdin); err != nil {

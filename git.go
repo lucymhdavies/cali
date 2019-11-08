@@ -119,7 +119,7 @@ func (cfg GitCheckoutConfig) GetContainerName() (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("Failed to get container name for %s: %s", cfg.Repo, err)
 	}
-	containerName := repoName
+	var containerName string
 
 	if cfg.RelPath == "." || cfg.RelPath == "" {
 		containerName = fmt.Sprintf("data_%s_%s_%x",

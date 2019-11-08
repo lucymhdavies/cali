@@ -62,7 +62,7 @@ func (c *Command) Flags() *flag.FlagSet {
 // BindFlags needs to be called after all flags for a command have been defined
 func (c *Command) BindFlags() {
 	c.Flags().VisitAll(func(f *flag.Flag) {
-		myFlags.BindPFlag(f.Name, f)
+		_ = myFlags.BindPFlag(f.Name, f)
 		myFlags.SetDefault(f.Name, f.DefValue)
 	})
 }
